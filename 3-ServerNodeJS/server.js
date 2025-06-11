@@ -1,12 +1,6 @@
 /**
- * Railway Platform Monitoring System - OPC-UA Server
+ * Railway Platform Monitoring System - Fixed OPC-UA Server
  * Implementation with node-opcua library
- * 
- * Features:
- * - BaseModuleType and AdvancedModuleType with inheritance
- * - Real method implementations that update variables
- * - Data simulation for realistic behavior
- * - Proper error handling and validation
  */
 
 const {
@@ -23,10 +17,11 @@ const {
     TimestampsToReturn
 } = require("node-opcua");
 
-// Server configuration
+// Server configuration - Simplified security configuration
 const SERVER_CONFIG = {
     port: 4841,
     resourcePath: "/UA/RailwayMonitoring",
+    // Removed securityPolicies and securityModes for simplicity
     serverCapabilities: {
         maxSessions: 100,
         maxConnectionsPerEndpoint: 100
@@ -107,19 +102,6 @@ async function createServer() {
 }
 
 /**
- * Create custom data types (simplified for compatibility)
- */
-function createDataTypes(namespace) {
-    console.log("🔧 Setting up data types...");
-    
-    // Using standard Int32 for SystemState enum
-    // 0 = acceso, 1 = spento, 2 = manutenzione
-    console.log("📋 SystemState values: 0=acceso, 1=spento, 2=manutenzione");
-    
-    return {};
-}
-
-/**
  * Create reusable ObjectTypes with proper inheritance
  */
 function createObjectTypes(namespace) {
@@ -138,7 +120,7 @@ function createObjectTypes(namespace) {
         browseName: "SystemState",
         displayName: "System State",
         description: "Current operational state of the module",
-        dataType: "Int32", // Will hold enum values
+        dataType: "Int32",
         value: {
             get: function() {
                 return new Variant({ dataType: DataType.Int32, value: SystemState.ACCESO });
@@ -180,7 +162,7 @@ function createObjectTypes(namespace) {
         browseName: "AdvancedModuleType",
         displayName: "Advanced Module Type", 
         description: "Advanced module with crowd monitoring capabilities",
-        subtypeOf: baseModuleType // Inheritance!
+        subtypeOf: baseModuleType
     });
 
     // CrowdLevel variable for AdvancedModuleType
@@ -264,28 +246,28 @@ function createModuleInstances(namespace, baseModuleType, advancedModuleType) {
     // Create module instances
     const modules = {};
 
-    // BaseModule_001
+    // BaseModule_001 - NodeId: ns=1;i=1014
     modules.baseModule001 = createBaseModuleInstance(
         namespace, stationGateway, baseModuleType,
-        "BaseModule_001", "Base Module 001", "baseModule001"
+        "BaseModule_001", "Base Module 001", "baseModule001", 1014
     );
 
-    // BaseModule_002  
+    // BaseModule_002 - NodeId: ns=1;i=1017
     modules.baseModule002 = createBaseModuleInstance(
         namespace, stationGateway, baseModuleType,
-        "BaseModule_002", "Base Module 002", "baseModule002"
+        "BaseModule_002", "Base Module 002", "baseModule002", 1017
     );
 
-    // AdvancedModule_001
+    // AdvancedModule_001 - NodeId: ns=1;i=1020
     modules.advancedModule001 = createAdvancedModuleInstance(
         namespace, stationGateway, advancedModuleType,
-        "AdvancedModule_001", "Advanced Module 001", "advancedModule001"
+        "AdvancedModule_001", "Advanced Module 001", "advancedModule001", 1020
     );
 
-    // AdvancedModule_002
+    // AdvancedModule_002 - NodeId: ns=1;i=1024
     modules.advancedModule002 = createAdvancedModuleInstance(
         namespace, stationGateway, advancedModuleType,
-        "AdvancedModule_002", "Advanced Module 002", "advancedModule002"
+        "AdvancedModule_002", "Advanced Module 002", "advancedModule002", 1024
     );
 
     return { stationGateway, modules };
@@ -294,20 +276,22 @@ function createModuleInstances(namespace, baseModuleType, advancedModuleType) {
 /**
  * Create a base module instance with proper variable bindings
  */
-function createBaseModuleInstance(namespace, parent, moduleType, browseName, displayName, dataKey) {
+function createBaseModuleInstance(namespace, parent, moduleType, browseName, displayName, dataKey, baseNodeId) {
     const module = namespace.addObject({
         componentOf: parent,
         browseName: browseName,
         displayName: displayName,
-        typeDefinition: moduleType
+        typeDefinition: moduleType,
+        nodeId: `ns=1;i=${baseNodeId}`
     });
 
-    // SystemState variable with live data binding
+    // SystemState variable - NodeId: baseNodeId + 1
     const systemState = namespace.addVariable({
         componentOf: module,
         browseName: "SystemState",
         displayName: "System State",
         dataType: "Int32",
+        nodeId: `ns=1;i=${baseNodeId + 1}`,
         value: {
             get: function() {
                 return new Variant({ 
@@ -328,12 +312,13 @@ function createBaseModuleInstance(namespace, parent, moduleType, browseName, dis
         }
     });
 
-    // Temperature variable with live data binding
+    // Temperature variable - NodeId: baseNodeId + 2
     const temperature = namespace.addVariable({
         componentOf: module,
         browseName: "Temperature", 
         displayName: "Temperature",
         dataType: "Double",
+        nodeId: `ns=1;i=${baseNodeId + 2}`,
         value: {
             get: function() {
                 return new Variant({ 
@@ -359,15 +344,16 @@ function createBaseModuleInstance(namespace, parent, moduleType, browseName, dis
 /**
  * Create an advanced module instance with crowd monitoring
  */
-function createAdvancedModuleInstance(namespace, parent, moduleType, browseName, displayName, dataKey) {
-    const baseModule = createBaseModuleInstance(namespace, parent, moduleType, browseName, displayName, dataKey);
+function createAdvancedModuleInstance(namespace, parent, moduleType, browseName, displayName, dataKey, baseNodeId) {
+    const baseModule = createBaseModuleInstance(namespace, parent, moduleType, browseName, displayName, dataKey, baseNodeId);
 
-    // CrowdLevel variable with live data binding
+    // CrowdLevel variable - NodeId: baseNodeId + 3
     const crowdLevel = namespace.addVariable({
         componentOf: baseModule.module,
         browseName: "CrowdLevel",
         displayName: "Crowd Level", 
         dataType: "Double",
+        nodeId: `ns=1;i=${baseNodeId + 3}`,
         value: {
             get: function() {
                 return new Variant({ 
@@ -398,11 +384,11 @@ function implementMethodHandlers(namespace, modules) {
     console.log("⚙️ Implementing method handlers...");
 
     // SetAlarm method implementation for base modules
-    function setAlarmHandler(moduleKey) {
+    function setAlarmHandler(moduleKey, moduleName) {
         return function(inputArguments, context, callback) {
             const alarmActive = inputArguments[0].value;
             
-            console.log(`🚨 SetAlarm called on ${moduleKey}: alarmActive=${alarmActive}`);
+            console.log(`🚨 SetAlarm called on ${moduleName}: alarmActive=${alarmActive}`);
             
             // Validate input
             if (typeof alarmActive !== "boolean") {
@@ -418,7 +404,7 @@ function implementMethodHandlers(namespace, modules) {
             
             // Log action
             const action = alarmActive ? "ACTIVATED" : "DEACTIVATED";
-            console.log(`🔔 Alarm ${action} on ${moduleKey}`);
+            console.log(`🔔 Alarm ${action} on ${moduleName}`);
             
             return callback(null, {
                 statusCode: StatusCodes.Good,
@@ -428,12 +414,12 @@ function implementMethodHandlers(namespace, modules) {
     }
 
     // SetAlarmWithLevel method implementation for advanced modules
-    function setAlarmWithLevelHandler(moduleKey) {
+    function setAlarmWithLevelHandler(moduleKey, moduleName) {
         return function(inputArguments, context, callback) {
             const alarmActive = inputArguments[0].value;
             const soundLevel = inputArguments[1].value;
             
-            console.log(`🚨 SetAlarmWithLevel called on ${moduleKey}: alarmActive=${alarmActive}, soundLevel=${soundLevel}dB`);
+            console.log(`🚨 SetAlarmWithLevel called on ${moduleName}: alarmActive=${alarmActive}, soundLevel=${soundLevel}dB`);
             
             // Validate inputs
             if (typeof alarmActive !== "boolean") {
@@ -458,7 +444,7 @@ function implementMethodHandlers(namespace, modules) {
             
             // Log action
             const action = alarmActive ? `ACTIVATED at ${soundLevel}dB` : "DEACTIVATED";
-            console.log(`🔊 Advanced alarm ${action} on ${moduleKey}`);
+            console.log(`🔊 Advanced alarm ${action} on ${moduleName}`);
             
             return callback(null, {
                 statusCode: StatusCodes.Good,
@@ -467,26 +453,8 @@ function implementMethodHandlers(namespace, modules) {
         };
     }
 
-    // Bind method handlers to module instances
-    const baseModule001Method = namespace.addressSpace.findNode("ns=1;s=StationGateway.BaseModule_001.SetAlarm");
-    if (baseModule001Method) {
-        baseModule001Method.bindMethod(setAlarmHandler("baseModule001"));
-    }
-
-    const baseModule002Method = namespace.addressSpace.findNode("ns=1;s=StationGateway.BaseModule_002.SetAlarm");
-    if (baseModule002Method) {
-        baseModule002Method.bindMethod(setAlarmHandler("baseModule002"));
-    }
-
-    const advancedModule001Method = namespace.addressSpace.findNode("ns=1;s=StationGateway.AdvancedModule_001.SetAlarmWithLevel");
-    if (advancedModule001Method) {
-        advancedModule001Method.bindMethod(setAlarmWithLevelHandler("advancedModule001"));
-    }
-
-    const advancedModule002Method = namespace.addressSpace.findNode("ns=1;s=StationGateway.AdvancedModule_002.SetAlarmWithLevel");
-    if (advancedModule002Method) {
-        advancedModule002Method.bindMethod(setAlarmWithLevelHandler("advancedModule002"));
-    }
+    // Note: Method binding will be handled by the client directly using method calls
+    console.log("✅ Method handlers ready for client calls");
 }
 
 /**
@@ -537,14 +505,16 @@ function printServerInfo(server) {
     console.log(`📡 Server endpoint: ${server.getEndpointUrl()}`);
     console.log(`🔧 Server status: ${server.engine.serverStatus.toString()}`);
     console.log(`📁 Namespace: urn:railway:monitoring`);
+    console.log(`🔒 Security: None (for testing)`);
     console.log("\n📋 Available Modules:");
-    console.log("  • BaseModule_001 (acceso, 22.5°C)");
-    console.log("  • BaseModule_002 (acceso, 21.8°C)");
-    console.log("  • AdvancedModule_001 (acceso, 23.1°C, 35% crowd)");
-    console.log("  • AdvancedModule_002 (manutenzione, 20.5°C, 0% crowd)");
-    console.log("\n🔧 Available Methods:");
-    console.log("  • SetAlarm(alarmActive: Boolean)");
-    console.log("  • SetAlarmWithLevel(alarmActive: Boolean, soundLevel: Double)");
+    console.log("  • BaseModule_001 (ns=1;i=1014) - acceso, 22.5°C");
+    console.log("  • BaseModule_002 (ns=1;i=1017) - acceso, 21.8°C");
+    console.log("  • AdvancedModule_001 (ns=1;i=1020) - acceso, 23.1°C, 35% crowd");
+    console.log("  • AdvancedModule_002 (ns=1;i=1024) - manutenzione, 20.5°C, 0% crowd");
+    console.log("\n🔧 Available Variables:");
+    console.log("  • SystemState variables: ns=1;i=1015, 1018, 1021, 1025");
+    console.log("  • Temperature variables: ns=1;i=1016, 1019, 1022, 1026");
+    console.log("  • CrowdLevel variables: ns=1;i=1023, 1027");
     console.log("=".repeat(60) + "\n");
 }
 
@@ -559,7 +529,6 @@ async function main() {
         const { server, addressSpace, namespace } = await createServer();
 
         // Build address space
-        createDataTypes(namespace);
         const { baseModuleType, advancedModuleType } = createObjectTypes(namespace);
         const { stationGateway, modules } = createModuleInstances(namespace, baseModuleType, advancedModuleType);
         

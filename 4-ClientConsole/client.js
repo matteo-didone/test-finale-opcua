@@ -1,20 +1,12 @@
 /**
- * Railway Platform Monitoring System - Dynamic OPC-UA Client
- * Client che scopre automaticamente la struttura del server
- * 
- * Features:
- * - Esplorazione automatica dell'address space
- * - Scoperta dinamica di oggetti, variabili e metodi
- * - Monitoraggio automatico di tutti i nodi trovati
- * - Non richiede NodeId hardcoded
+ * Railway Platform Monitoring System - Auto-Discovery Client
+ * Client che trova automaticamente l'endpoint corretto
  */
 
 const {
     OPCUAClient,
     AttributeIds,
     TimestampsToReturn,
-    MonitoringParametersOptions,
-    ReadValueIdOptions,
     ClientSubscription,
     ClientMonitoredItem,
     DataValue,
@@ -26,31 +18,56 @@ const {
     ReferenceTypeIds
 } = require("node-opcua");
 
+// Possible endpoints to try
+const POSSIBLE_ENDPOINTS = [
+    "opc.tcp://THINKPADMATTEO:4841/UA/RailwayMonitoring",
+    "opc.tcp://localhost:4841/UA/RailwayMonitoring",
+    "opc.tcp://127.0.0.1:4841/UA/RailwayMonitoring"
+];
+
 // Client configuration
 const CLIENT_CONFIG = {
     applicationName: "Railway Monitoring Dynamic Client",
     connectionStrategy: {
         initialDelay: 1000,
-        maxRetry: 3,
-        maxDelay: 10000
+        maxRetry: 1,
+        maxDelay: 5000
     },
     securityMode: "None",
-    securityPolicy: "None",
-    endpoint: "opc.tcp://THINKPADMATTEO:4841/UA/RailwayMonitoring"
+    securityPolicy: "None"
 };
 
 // System state mapping
 const SystemStateStrings = ["acceso", "spento", "manutenzione"];
 
+// Module mapping for better organization
+const ModuleMapping = {
+    'BaseModule_001': {
+        systemState: 'ns=1;i=1015',
+        temperature: 'ns=1;i=1016'
+    },
+    'BaseModule_002': {
+        systemState: 'ns=1;i=1018', 
+        temperature: 'ns=1;i=1019'
+    },
+    'AdvancedModule_001': {
+        systemState: 'ns=1;i=1021',
+        temperature: 'ns=1;i=1022',
+        crowdLevel: 'ns=1;i=1023'
+    },
+    'AdvancedModule_002': {
+        systemState: 'ns=1;i=1025',
+        temperature: 'ns=1;i=1026', 
+        crowdLevel: 'ns=1;i=1027'
+    }
+};
+
 // Global variables
 let client = null;
 let session = null;
 let subscription = null;
-let discoveredNodes = {
-    objects: [],
-    variables: [],
-    methods: []
-};
+let moduleData = {};
+let connectedEndpoint = null;
 
 /**
  * Format timestamp for console output
@@ -72,23 +89,22 @@ function formatTimestamp() {
 function printHeader() {
     console.clear();
     console.log("=".repeat(80));
-    console.log("🚂 RAILWAY MONITORING - DYNAMIC CLIENT CONSOLE");
+    console.log("🚂 RAILWAY MONITORING - AUTO-DISCOVERY CLIENT");
     console.log("=".repeat(80));
-    console.log(`📡 Connected to: ${CLIENT_CONFIG.endpoint}`);
     console.log(`⏰ Started at: ${formatTimestamp()}`);
     console.log("=".repeat(80));
     console.log("");
 }
 
 /**
- * Format value based on variable name
+ * Format value based on variable type
  */
-function formatValue(value, browseName) {
-    if (browseName.includes('SystemState')) {
+function formatValue(value, variableType) {
+    if (variableType === 'systemState') {
         return `${SystemStateStrings[value] || 'unknown'} (${value})`;
-    } else if (browseName.includes('Temperature')) {
+    } else if (variableType === 'temperature') {
         return `${value.toFixed(1)}°C`;
-    } else if (browseName.includes('CrowdLevel')) {
+    } else if (variableType === 'crowdLevel') {
         return `${value.toFixed(1)}%`;
     }
     return value;
@@ -97,8 +113,8 @@ function formatValue(value, browseName) {
 /**
  * Get module icon based on name and state
  */
-function getModuleIcon(browseName, systemState) {
-    if (browseName.includes('Advanced')) {
+function getModuleIcon(moduleName, systemState) {
+    if (moduleName.includes('Advanced')) {
         return systemState === 0 ? "🟦" : systemState === 2 ? "🔧" : "🔴";
     } else {
         return systemState === 0 ? "🟢" : systemState === 2 ? "🔧" : "🔴";
@@ -106,344 +122,152 @@ function getModuleIcon(browseName, systemState) {
 }
 
 /**
- * Create and configure OPC-UA client
+ * Try to connect to different endpoints automatically
  */
-async function createClient() {
-    console.log("🔌 Creating OPC-UA client...");
+async function findAndConnectToServer() {
+    console.log("🔍 Auto-discovering server endpoint...");
     
-    client = OPCUAClient.create(CLIENT_CONFIG);
+    for (const endpoint of POSSIBLE_ENDPOINTS) {
+        try {
+            console.log(`🔌 Trying endpoint: ${endpoint}`);
+            
+            // Create new client for each attempt
+            client = OPCUAClient.create({
+                ...CLIENT_CONFIG,
+                endpoint: endpoint
+            });
+            
+            // Try to connect
+            await client.connect(endpoint);
+            console.log(`✅ Successfully connected to: ${endpoint}`);
+            
+            connectedEndpoint = endpoint;
+            return endpoint;
+            
+        } catch (error) {
+            console.log(`❌ Failed to connect to ${endpoint}: ${error.message.split('\n')[0]}`);
+            
+            // Cleanup failed client
+            if (client) {
+                try {
+                    await client.disconnect();
+                } catch (e) {
+                    // Ignore cleanup errors
+                }
+                client = null;
+            }
+        }
+    }
     
-    client.on("connection_reestablished", () => {
-        console.log(`🔄 ${formatTimestamp()} - Connection reestablished`);
-    });
-    
-    client.on("connection_lost", () => {
-        console.log(`❌ ${formatTimestamp()} - Connection lost`);
-    });
-    
-    return client;
+    throw new Error("Could not connect to any available endpoint");
 }
 
 /**
- * Connect to server and create session
+ * Create session after successful connection
  */
-async function connectToServer() {
+async function createSession() {
     try {
-        console.log("🤝 Connecting to server...");
-        await client.connect(CLIENT_CONFIG.endpoint);
-        console.log("✅ Connected to server");
-        
         console.log("📋 Creating session...");
         session = await client.createSession();
         console.log("✅ Session created");
         
+        console.log(`📡 Connected to: ${connectedEndpoint}`);
+        console.log("");
+        
         return session;
     } catch (error) {
-        console.error("❌ Connection failed:", error.message);
+        console.error("❌ Session creation failed:", error.message);
         throw error;
     }
 }
 
 /**
- * Browse recursively to discover all nodes
+ * Read station information
  */
-async function browseRecursively(nodeId, level = 0, maxLevel = 3) {
-    if (level > maxLevel) return;
-    
+async function readStationInfo() {
     try {
-        const browseResult = await session.browse({
-            nodeId: nodeId,
-            browseDirection: BrowseDirection.Forward,
-            includeSubtypes: true,
-            nodeClassMask: 0xFF // All node classes
-        });
+        const stationData = await session.read([
+            { nodeId: "ns=1;i=1012", attributeId: AttributeIds.Value }, // StationId
+            { nodeId: "ns=1;i=1013", attributeId: AttributeIds.Value }  // StationName
+        ]);
         
-        if (browseResult.statusCode !== StatusCodes.Good) {
-            return;
+        if (stationData[0].statusCode === StatusCodes.Good && 
+            stationData[1].statusCode === StatusCodes.Good) {
+            
+            const stationId = stationData[0].value.value;
+            const stationName = stationData[1].value.value;
+            
+            console.log(`🏗️ Station: ${stationName} (ID: ${stationId})`);
+            console.log("");
         }
-        
-        for (const reference of browseResult.references || []) {
-            const targetNodeId = reference.nodeId;
-            const browseName = reference.browseName ? reference.browseName.name : "Unknown";
-            const nodeClass = reference.nodeClass;
-            
-            // Skip standard OPC-UA nodes - aggiustiamo la verifica
-            if (!browseName || 
-                browseName.startsWith('Server') || 
-                browseName.startsWith('Namespace') ||
-                browseName === 'Types' ||
-                browseName === 'Views' ||
-                browseName.includes('FolderType') ||
-                browseName.includes('BaseObjectType')) {
-                continue;
-            }
-            
-            const nodeInfo = {
-                nodeId: targetNodeId,
-                browseName: browseName,
-                displayName: (reference.displayName && reference.displayName.text) ? reference.displayName.text : browseName,
-                nodeClass: nodeClass,
-                level: level
-            };
-            
-            // Categorize nodes
-            if (nodeClass === NodeClass.Object) {
-                discoveredNodes.objects.push(nodeInfo);
-                console.log(`${'  '.repeat(level)}📁 Object: ${browseName} (${targetNodeId})`);
-                
-                // Browse deeper for objects
-                await browseRecursively(targetNodeId, level + 1, maxLevel);
-                
-            } else if (nodeClass === NodeClass.Variable) {
-                discoveredNodes.variables.push(nodeInfo);
-                console.log(`${'  '.repeat(level)}📊 Variable: ${browseName} (${targetNodeId})`);
-                
-            } else if (nodeClass === NodeClass.Method) {
-                discoveredNodes.methods.push(nodeInfo);
-                console.log(`${'  '.repeat(level)}⚙️ Method: ${browseName} (${targetNodeId})`);
-            }
-        }
-        
     } catch (error) {
-        console.log(`${'  '.repeat(level)}❌ Browse error for ${nodeId}: ${error.message}`);
+        console.log("❌ Could not read station information");
     }
 }
 
 /**
- * Discover all nodes in the server
+ * Read all module data
  */
-async function discoverNodes() {
-    console.log("🔍 Discovering server nodes...");
-    console.log("-".repeat(80));
-    
-    // Reset discovered nodes
-    discoveredNodes = { objects: [], variables: [], methods: [] };
-    
-    // Try browsing from Objects folder first
-    const objectsNodeId = "i=85"; // Standard Objects folder
-    await browseRecursively(objectsNodeId);
-    
-    // If no nodes found, try alternative approach with known patterns
-    if (discoveredNodes.objects.length === 0 && discoveredNodes.variables.length === 0) {
-        console.log("🔄 No nodes found via browsing, trying direct approach...");
-        await tryDirectNodeAccess();
-    }
-    
-    console.log("-".repeat(80));
-    console.log(`📊 Discovery complete: ${discoveredNodes.objects.length} objects, ${discoveredNodes.variables.length} variables, ${discoveredNodes.methods.length} methods`);
-    console.log("");
-    
-    return discoveredNodes;
-}
-
-/**
- * Try to access known node patterns directly
- */
-async function tryDirectNodeAccess() {
-    const potentialNodes = [
-        // Station Gateway (trovato dal test)
-        { nodeId: "ns=1;i=1011", type: "object", name: "StationGateway" },
-        { nodeId: "ns=1;i=1012", type: "variable", name: "StationId" },
-        { nodeId: "ns=1;i=1013", type: "variable", name: "StationName" },
-        
-        // Base modules (dai risultati del test)
-        { nodeId: "ns=1;i=1014", type: "object", name: "BaseModule_001" },
-        { nodeId: "ns=1;i=1017", type: "object", name: "BaseModule_002" },
-        
-        // Advanced modules (dai risultati del test)
-        { nodeId: "ns=1;i=1020", type: "object", name: "AdvancedModule_001" },
-        { nodeId: "ns=1;i=1024", type: "object", name: "AdvancedModule_002" },
-        
-        // Prova anche le variabili che abbiamo trovato
-        { nodeId: "ns=1;i=1001", type: "variable", name: "SystemState_1" },
-        { nodeId: "ns=1;i=1002", type: "variable", name: "Temperature_1" },
-        
-        // Tentiamo range di ID per trovare altre variabili
-        { nodeId: "ns=1;i=1003", type: "variable", name: "Variable_1003" },
-        { nodeId: "ns=1;i=1004", type: "variable", name: "Variable_1004" },
-        { nodeId: "ns=1;i=1005", type: "variable", name: "Variable_1005" },
-        { nodeId: "ns=1;i=1006", type: "variable", name: "Variable_1006" },
-        { nodeId: "ns=1;i=1007", type: "variable", name: "Variable_1007" },
-        { nodeId: "ns=1;i=1008", type: "variable", name: "Variable_1008" },
-        { nodeId: "ns=1;i=1009", type: "variable", name: "Variable_1009" },
-        { nodeId: "ns=1;i=1010", type: "variable", name: "Variable_1010" },
-        
-        // Continua il range per i moduli
-        { nodeId: "ns=1;i=1015", type: "variable", name: "Variable_1015" },
-        { nodeId: "ns=1;i=1016", type: "variable", name: "Variable_1016" },
-        { nodeId: "ns=1;i=1018", type: "variable", name: "Variable_1018" },
-        { nodeId: "ns=1;i=1019", type: "variable", name: "Variable_1019" },
-        { nodeId: "ns=1;i=1021", type: "variable", name: "Variable_1021" },
-        { nodeId: "ns=1;i=1022", type: "variable", name: "Variable_1022" },
-        { nodeId: "ns=1;i=1023", type: "variable", name: "Variable_1023" },
-        { nodeId: "ns=1;i=1025", type: "variable", name: "Variable_1025" },
-        { nodeId: "ns=1;i=1026", type: "variable", name: "Variable_1026" },
-        { nodeId: "ns=1;i=1027", type: "variable", name: "Variable_1027" },
-        { nodeId: "ns=1;i=1028", type: "variable", name: "Variable_1028" },
-        { nodeId: "ns=1;i=1029", type: "variable", name: "Variable_1029" },
-        { nodeId: "ns=1;i=1030", type: "variable", name: "Variable_1030" }
-    ];
-    
-    for (const node of potentialNodes) {
-        try {
-            // Prima prova a leggere il valore
-            const valueResult = await session.read({
-                nodeId: node.nodeId,
-                attributeId: AttributeIds.Value
-            });
-            
-            if (valueResult.statusCode === StatusCodes.Good) {
-                // Poi leggi il NodeClass per categorizzare correttamente
-                const classResult = await session.read({
-                    nodeId: node.nodeId,
-                    attributeId: AttributeIds.NodeClass
-                });
-                
-                // E anche il BrowseName per avere il nome corretto
-                const nameResult = await session.read({
-                    nodeId: node.nodeId,
-                    attributeId: AttributeIds.BrowseName
-                });
-                
-                const realName = nameResult.statusCode === StatusCodes.Good ? 
-                    nameResult.value.value.name : node.name;
-                
-                const nodeInfo = {
-                    nodeId: node.nodeId,
-                    browseName: realName,
-                    displayName: realName,
-                    nodeClass: classResult.statusCode === StatusCodes.Good ? classResult.value.value : 1,
-                    level: 1
-                };
-                
-                if (node.type === "object" || nodeInfo.nodeClass === 1) {
-                    discoveredNodes.objects.push(nodeInfo);
-                    console.log(`📁 Found Object: ${realName} (${node.nodeId})`);
-                } else if (node.type === "variable" || nodeInfo.nodeClass === 2) {
-                    discoveredNodes.variables.push(nodeInfo);
-                    console.log(`📊 Found Variable: ${realName} = ${valueResult.value.value} (${node.nodeId})`);
-                } else if (node.type === "method" || nodeInfo.nodeClass === 4) {
-                    discoveredNodes.methods.push(nodeInfo);
-                    console.log(`⚙️ Found Method: ${realName} (${node.nodeId})`);
-                }
-            }
-        } catch (error) {
-            // Node doesn't exist or can't be read, continue silently
-        }
-    }
-    
-    // Anche prova a fare browse sui moduli che abbiamo trovato
-    const moduleIds = ["ns=1;i=1014", "ns=1;i=1017", "ns=1;i=1020", "ns=1;i=1024"];
-    
-    for (const moduleId of moduleIds) {
-        try {
-            const browseResult = await session.browse(moduleId);
-            if (browseResult.statusCode === StatusCodes.Good) {
-                console.log(`🔍 Browsing module ${moduleId}:`);
-                for (const ref of browseResult.references || []) {
-                    const browseName = ref.browseName ? ref.browseName.name : "Unknown";
-                    console.log(`  └─ ${browseName} (${ref.nodeId})`);
-                    
-                    // Aggiungi ai nodi scoperti
-                    const nodeInfo = {
-                        nodeId: ref.nodeId,
-                        browseName: browseName,
-                        displayName: browseName,
-                        nodeClass: ref.nodeClass,
-                        level: 2
-                    };
-                    
-                    if (ref.nodeClass === 2) { // Variable
-                        discoveredNodes.variables.push(nodeInfo);
-                    } else if (ref.nodeClass === 4) { // Method
-                        discoveredNodes.methods.push(nodeInfo);
-                    }
-                }
-            }
-        } catch (error) {
-            // Continue if browse fails
-        }
-    }
-}
-
-/**
- * Read values from all discovered variables
- */
-async function readAllValues() {
-    if (discoveredNodes.variables.length === 0) {
-        console.log("❌ No variables discovered");
-        return;
-    }
-    
+async function readAllModuleData() {
     try {
-        console.log("📖 Reading values from all discovered variables...");
+        console.log("📖 Reading module data...");
+        console.log("");
         
-        const readRequest = discoveredNodes.variables.map(variable => ({
-            nodeId: variable.nodeId,
-            attributeId: AttributeIds.Value
-        }));
+        // Read all variables for all modules
+        const readRequests = [];
+        const nodeMapping = [];
         
-        const results = await session.read(readRequest);
+        for (const [moduleName, variables] of Object.entries(ModuleMapping)) {
+            for (const [variableType, nodeId] of Object.entries(variables)) {
+                readRequests.push({
+                    nodeId: nodeId,
+                    attributeId: AttributeIds.Value
+                });
+                nodeMapping.push({ moduleName, variableType });
+            }
+        }
         
-        console.log("\n📊 Current Values:");
+        const results = await session.read(readRequests);
+        
+        // Process results and organize by module
+        moduleData = {};
+        
+        for (let i = 0; i < results.length; i++) {
+            const result = results[i];
+            const { moduleName, variableType } = nodeMapping[i];
+            
+            if (result.statusCode === StatusCodes.Good) {
+                if (!moduleData[moduleName]) {
+                    moduleData[moduleName] = {};
+                }
+                moduleData[moduleName][variableType] = result.value.value;
+            }
+        }
+        
+        // Display organized module data
+        console.log("📊 Initial Module States:");
         console.log("-".repeat(80));
         
-        // Group by parent object
-        const groupedVariables = {};
-        
-        for (let i = 0; i < discoveredNodes.variables.length; i++) {
-            const variable = discoveredNodes.variables[i];
-            const result = results[i];
+        for (const [moduleName, data] of Object.entries(moduleData)) {
+            const icon = getModuleIcon(moduleName, data.systemState);
+            const stateStr = formatValue(data.systemState, 'systemState');
+            const tempStr = formatValue(data.temperature, 'temperature');
             
-            if (result.statusCode === StatusCodes.Good && result.value) {
-                const value = result.value.value;
-                const formattedValue = formatValue(value, variable.browseName);
-                
-                // Extract parent object name from browseName or nodeId
-                let parentName = "Unknown";
-                if (variable.browseName.includes('Module')) {
-                    // Try to extract module name from context
-                    const objectNode = discoveredNodes.objects.find(obj => 
-                        variable.nodeId.toString().includes(obj.browseName)
-                    );
-                    if (objectNode) {
-                        parentName = objectNode.browseName;
-                    }
-                } else {
-                    // Look for parent in nodeId string
-                    const nodeIdStr = variable.nodeId.toString();
-                    const match = nodeIdStr.match(/s=([^.]+)/);
-                    if (match) {
-                        parentName = match[1];
-                    }
-                }
-                
-                if (!groupedVariables[parentName]) {
-                    groupedVariables[parentName] = [];
-                }
-                
-                groupedVariables[parentName].push({
-                    name: variable.browseName,
-                    value: formattedValue,
-                    rawValue: value
-                });
+            let output = `${icon} ${moduleName}: ${stateStr} | ${tempStr}`;
+            
+            if (data.crowdLevel !== undefined) {
+                const crowdStr = formatValue(data.crowdLevel, 'crowdLevel');
+                output += ` | ${crowdStr}`;
             }
-        }
-        
-        // Display grouped results
-        for (const [parentName, variables] of Object.entries(groupedVariables)) {
-            const systemStateVar = variables.find(v => v.name.includes('SystemState'));
-            const icon = systemStateVar ? getModuleIcon(parentName, systemStateVar.rawValue) : "📊";
             
-            const valueStr = variables.map(v => `${v.name}: ${v.value}`).join(' | ');
-            console.log(`${icon} ${parentName}: ${valueStr}`);
+            console.log(output);
         }
         
         console.log("-".repeat(80));
         console.log("");
         
     } catch (error) {
-        console.error("❌ Failed to read values:", error.message);
+        console.error("❌ Failed to read module data:", error.message);
     }
 }
 
@@ -464,7 +288,7 @@ async function createSubscription() {
         });
         
         subscription.on("started", () => {
-            console.log("✅ Subscription started - monitoring all variables");
+            console.log("✅ Subscription started - monitoring changes only");
             console.log("\n🔍 Live Monitoring (changes will be shown):");
             console.log("-".repeat(80));
         });
@@ -477,95 +301,47 @@ async function createSubscription() {
 }
 
 /**
- * Monitor all discovered variables
+ * Monitor all module variables
  */
-async function monitorAllVariables() {
-    for (const variable of discoveredNodes.variables) {
-        try {
-            const monitoredItem = ClientMonitoredItem.create(
-                subscription,
-                { nodeId: variable.nodeId, attributeId: AttributeIds.Value },
-                { samplingInterval: 1000, discardOldest: true, queueSize: 10 },
-                TimestampsToReturn.Both
-            );
-            
-            monitoredItem.on("changed", (dataValue) => {
-                if (dataValue.statusCode === StatusCodes.Good) {
-                    const timestamp = formatTimestamp();
-                    const value = formatValue(dataValue.value.value, variable.browseName);
-                    
-                    // Get icon for display
-                    const isSystemState = variable.browseName.includes('SystemState');
-                    const icon = isSystemState ? getModuleIcon(variable.browseName, dataValue.value.value) : "📊";
-                    
-                    console.log(`${icon} ${timestamp} | ${variable.browseName}: ${value}`);
-                }
-            });
-            
-        } catch (error) {
-            console.log(`❌ Failed to monitor ${variable.browseName}: ${error.message}`);
-        }
-    }
-}
-
-/**
- * Test discovered methods
- */
-async function testMethods() {
-    if (discoveredNodes.methods.length === 0) {
-        console.log("❌ No methods discovered to test");
-        return;
-    }
-    
-    console.log("\n🧪 Testing discovered methods in 10 seconds...");
-    
-    setTimeout(async () => {
-        for (const method of discoveredNodes.methods.slice(0, 2)) { // Test first 2 methods
+async function monitorModuleVariables() {
+    for (const [moduleName, variables] of Object.entries(ModuleMapping)) {
+        for (const [variableType, nodeId] of Object.entries(variables)) {
             try {
-                console.log(`\n🚨 Testing method: ${method.browseName}`);
-                
-                // Find parent object
-                const parentObject = discoveredNodes.objects.find(obj => 
-                    method.nodeId.toString().includes(obj.browseName)
+                const monitoredItem = ClientMonitoredItem.create(
+                    subscription,
+                    { nodeId: nodeId, attributeId: AttributeIds.Value },
+                    { samplingInterval: 1000, discardOldest: true, queueSize: 10 },
+                    TimestampsToReturn.Both
                 );
                 
-                if (!parentObject) {
-                    console.log(`❌ Could not find parent object for ${method.browseName}`);
-                    continue;
-                }
-                
-                // Prepare input arguments based on method name
-                let inputArguments = [];
-                if (method.browseName.includes('SetAlarm')) {
-                    if (method.browseName.includes('WithLevel')) {
-                        inputArguments = [
-                            { dataType: DataType.Boolean, value: true },
-                            { dataType: DataType.Double, value: 75.0 }
-                        ];
-                    } else {
-                        inputArguments = [
-                            { dataType: DataType.Boolean, value: true }
-                        ];
+                monitoredItem.on("changed", (dataValue) => {
+                    if (dataValue.statusCode === StatusCodes.Good) {
+                        const timestamp = formatTimestamp();
+                        const value = formatValue(dataValue.value.value, variableType);
+                        
+                        // Update internal data
+                        if (!moduleData[moduleName]) moduleData[moduleName] = {};
+                        moduleData[moduleName][variableType] = dataValue.value.value;
+                        
+                        // Get appropriate icon
+                        let icon = "📊";
+                        if (variableType === 'systemState') {
+                            icon = getModuleIcon(moduleName, dataValue.value.value);
+                        } else if (variableType === 'crowdLevel') {
+                            icon = "👥";
+                        } else if (variableType === 'temperature') {
+                            icon = "🌡️";
+                        }
+                        
+                        console.log(`${icon} ${timestamp} | ${moduleName}.${variableType}: ${value}`);
                     }
-                }
-                
-                const result = await session.call({
-                    objectId: parentObject.nodeId,
-                    methodId: method.nodeId,
-                    inputArguments: inputArguments
                 });
                 
-                if (result.statusCode === StatusCodes.Good) {
-                    console.log(`✅ Method ${method.browseName} executed successfully`);
-                } else {
-                    console.log(`❌ Method ${method.browseName} failed: ${result.statusCode}`);
-                }
-                
             } catch (error) {
-                console.log(`❌ Method ${method.browseName} error: ${error.message}`);
+                console.log(`❌ Failed to monitor ${moduleName}.${variableType}: ${error.message}`);
             }
         }
-    }, 10000);
+    }
 }
 
 /**
@@ -605,24 +381,23 @@ async function main() {
     try {
         printHeader();
         
-        // Create client and connect
-        await createClient();
-        await connectToServer();
+        // Auto-discover and connect to server
+        await findAndConnectToServer();
+        await createSession();
         
-        // Discover all nodes dynamically
-        await discoverNodes();
+        // Read station information
+        await readStationInfo();
         
-        // Read initial values
-        await readAllValues();
+        // Read and display all module data
+        await readAllModuleData();
         
         // Set up real-time monitoring
         await createSubscription();
-        await monitorAllVariables();
-        
-        // Test methods
-        await testMethods();
+        await monitorModuleVariables();
         
         console.log("\n💡 Press Ctrl+C to exit");
+        console.log("🔧 Note: Method testing removed for simplicity");
+        console.log("📊 Monitoring temperature and crowd level changes...");
         
         // Handle graceful shutdown
         process.on('SIGINT', shutdown);
