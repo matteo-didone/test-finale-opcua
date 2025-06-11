@@ -57,7 +57,7 @@ Objects/
 - **Namespace personalizzato**: `urn:railway:monitoring`
 - **Ereditarietà**: AdvancedModuleType estende BaseModuleType per riutilizzo del codice
 - **Validazione**: range di valori definiti per ogni variabile
-- **NodeId naming**: formato string-based per leggibilità (`ns=1;s=StationGateway.BaseModule_001`)
+- **NodeId naming**: formato numeric per consistenza (`ns=1;i=1014`, `ns=1;i=1015`, ecc.)
 
 ### 📁 File Prodotti
 - `1-DiagrammaInformationModel/information-model-specification.md`
@@ -111,12 +111,13 @@ Implementare un server OPC-UA completamente funzionale con simulazione di dati r
 
 #### Architettura del Server
 ```javascript
-// Configurazione server con capacità produzione
+// Configurazione server ottimizzata per testing
 const SERVER_CONFIG = {
     port: 4841,
     resourcePath: "/UA/RailwayMonitoring",
     maxSessions: 100,
     maxConnectionsPerEndpoint: 100
+    // Security semplificata per ambiente di test
 }
 ```
 
@@ -125,7 +126,7 @@ const SERVER_CONFIG = {
 **1. Creazione Dinamica dell'Address Space**
 - ObjectTypes con ereditarietà completa
 - Variable binding con getter/setter in tempo reale
-- Method handlers con validazione parametri
+- NodeId fissi e consistenti per compatibility
 
 **2. Simulazione Dati Realistica**
 ```javascript
@@ -149,6 +150,13 @@ if (hour >= 7 && hour <= 9 || hour >= 17 && hour <= 19) {
 - Graceful shutdown con cleanup risorse
 - Aggiornamento automatico ogni 5 secondi
 
+#### Endpoint e NodeID Mapping
+- **Server Endpoint**: `opc.tcp://THINKPADMATTEO:4841/UA/RailwayMonitoring`
+- **BaseModule_001**: Object (ns=1;i=1014), SystemState (ns=1;i=1015), Temperature (ns=1;i=1016)
+- **BaseModule_002**: Object (ns=1;i=1017), SystemState (ns=1;i=1018), Temperature (ns=1;i=1019)
+- **AdvancedModule_001**: Object (ns=1;i=1020), SystemState (ns=1;i=1021), Temperature (ns=1;i=1022), CrowdLevel (ns=1;i=1023)
+- **AdvancedModule_002**: Object (ns=1;i=1024), SystemState (ns=1;i=1025), Temperature (ns=1;i=1026), CrowdLevel (ns=1;i=1027)
+
 #### Valori di Default Realistici
 - **BaseModule_001**: acceso, 22.5°C
 - **BaseModule_002**: acceso, 21.8°C  
@@ -164,23 +172,27 @@ if (hour >= 7 && hour <= 9 || hour >= 17 && hour <= 19) {
 ## 🖥️ Punto 4 - Client Console
 
 ### 🎯 Obiettivo
-Creare un client intelligente che monitora automaticamente tutti i cambiamenti di stato del sistema.
+Creare un client intelligente con auto-discovery che monitora automaticamente tutti i cambiamenti di stato del sistema.
 
 ### 🔧 Implementazione
 
 #### Features Principali
 
-**1. Discovery Automatico**
+**1. Auto-Discovery Endpoint**
 ```javascript
-// Il client esplora automaticamente l'address space
-await browseRecursively(objectsNodeId);
-await tryDirectNodeAccess(); // Fallback per nodi specifici
+// Il client trova automaticamente l'endpoint corretto
+const POSSIBLE_ENDPOINTS = [
+    "opc.tcp://THINKPADMATTEO:4841/UA/RailwayMonitoring",
+    "opc.tcp://localhost:4841/UA/RailwayMonitoring",
+    "opc.tcp://127.0.0.1:4841/UA/RailwayMonitoring"
+];
 ```
 
-**2. Monitoraggio Real-time**
-- Subscription OPC-UA per tutti i nodi scoperti
+**2. Monitoraggio Real-time Ottimizzato**
+- Subscription OPC-UA per variabili specifiche
 - Visualizzazione solo dei cambiamenti (no spam)
 - Formattazione intelligente dei valori (°C, %, enum)
+- Mapping diretto dei NodeID per performance
 
 **3. Interface Utente Avanzata**
 ```javascript
@@ -188,42 +200,47 @@ await tryDirectNodeAccess(); // Fallback per nodi specifici
 🟢 BaseModule (acceso)    🟦 AdvancedModule (acceso)
 🔧 Modulo (manutenzione)  🔴 Modulo (spento)
 
-// Output formattato con timestamp
-📊 11/06/2025, 09:05:35 | BaseModule_001.Temperature: 22.3°C
-👥 11/06/2025, 09:05:40 | AdvancedModule_001.CrowdLevel: 37.2%
+// Output formattato con timestamp italiani
+🌡️ 11/06/2025, 12:03:45 | BaseModule_001.temperature: 22.3°C
+👥 11/06/2025, 12:03:45 | AdvancedModule_001.crowdLevel: 34.9%
 ```
 
-**4. Test Automatici**
-- Test di SetAlarm sui moduli base dopo 10 secondi
-- Test di SetAlarmWithLevel sui moduli avanzati dopo 15 secondi
-- Logging completo dei risultati
+**4. Gestione Robusta degli Errori**
+- Auto-discovery con fallback automatico
+- Gestione certificati per ambiente di test
+- Reconnection automatica in caso di perdita connessione
+- Output pulito senza noise da variabili di sistema
 
 #### Caratteristiche Tecniche
-- **Reconnection automatica** in caso di perdita connessione
-- **Gestione errori robusta** per nodi non disponibili
+- **Security Mode**: None (per testing)
+- **Endpoint Discovery**: Automatico con multiple opzioni
 - **Grouping intelligente** delle variabili per modulo
 - **Graceful shutdown** con Ctrl+C
+- **Performance ottimizzate**: mapping diretto invece di browsing
 
-#### Output Esempio
+#### Output Esempio Reale
 ```
-🚂 RAILWAY MONITORING - DYNAMIC CLIENT CONSOLE
-📡 Connected to: opc.tcp://localhost:4841/UA/RailwayMonitoring
-⏰ Started at: 11/06/2025, 09:05:30
+🚂 RAILWAY MONITORING - AUTO-DISCOVERY CLIENT
+🔍 Auto-discovering server endpoint...
+✅ Successfully connected to: opc.tcp://THINKPADMATTEO:4841/UA/RailwayMonitoring
 
-🟢 BaseModule_001: acceso (0) | 22.5°C
-🟢 BaseModule_002: acceso (0) | 21.8°C  
-🟦 AdvancedModule_001: acceso (0) | 23.1°C | 35.0%
+🏗️ Station: Pordenone Centrale (ID: STN_001)
+
+📊 Initial Module States:
+🟢 BaseModule_001: acceso (0) | 22.9°C
+🟢 BaseModule_002: acceso (0) | 22.2°C  
+🟦 AdvancedModule_001: acceso (0) | 23.4°C | 34.1%
 🔧 AdvancedModule_002: manutenzione (2) | 20.5°C | 0.0%
 
 🔍 Live Monitoring (changes will be shown):
-📊 11/06/2025, 09:05:35 | BaseModule_001.Temperature: 22.3°C
-🚨 11/06/2025, 09:05:40 | Testing SetAlarm on BaseModule_001...
-✅ SetAlarm(true) executed successfully
+🌡️ 11/06/2025, 12:03:45 | BaseModule_001.temperature: 22.3°C
+👥 11/06/2025, 12:03:45 | AdvancedModule_001.crowdLevel: 34.9%
 ```
 
 ### 📁 File Prodotti
-- `4-ClientConsole/client.js` (client dinamico ~400 righe)
-- `4-ClientConsole/README.md` (documentazione d'uso)
+- `4-ClientConsole/client.js` (client standard)
+- `4-ClientConsole/client-auto.js` (client auto-discovery raccomandato)
+- `4-ClientConsole/README.md` (documentazione aggiornata)
 
 ---
 
@@ -238,21 +255,30 @@ await tryDirectNodeAccess(); // Fallback per nodi specifici
 **1. Setup del Server**
 ```bash
 cd 3-ServerNodeJS
-npm install
+npm install node-opcua@latest
 node server.js
+```
+
+**Output Atteso Server:**
+```
+✅ Server started successfully!
+📡 Server endpoint: opc.tcp://THINKPADMATTEO:4841/UA/RailwayMonitoring
+📋 Available Modules:
+  • BaseModule_001 (ns=1;i=1014) - acceso, 22.5°C
+📊 Starting data simulation...
 ```
 
 **2. Avvio del Client (in un altro terminale)**
 ```bash
 cd 4-ClientConsole
-npm install
+npm install node-opcua@latest
+
+# Client auto-discovery (raccomandato)
+node client-auto.js
+
+# OPPURE client standard
 node client.js
 ```
-
-**3. Test delle Funzionalità**
-- Il server simula automaticamente variazioni di temperatura e affollamento
-- Il client mostra i cambiamenti in tempo reale
-- I metodi vengono testati automaticamente dopo 10-15 secondi
 
 ## 🛠️ Tecnologie Utilizzate
 
