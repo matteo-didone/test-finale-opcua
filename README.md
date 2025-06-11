@@ -239,7 +239,6 @@ const POSSIBLE_ENDPOINTS = [
 
 ### 📁 File Prodotti
 - `4-ClientConsole/client.js` (client standard)
-- `4-ClientConsole/client-auto.js` (client auto-discovery raccomandato)
 - `4-ClientConsole/README.md` (documentazione aggiornata)
 
 ---
