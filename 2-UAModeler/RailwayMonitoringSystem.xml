@@ -1,0 +1,825 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UANodeSet xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+           xmlns:uax="http://opcfoundation.org/UA/2008/02/Types.xsd" 
+           xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd" 
+           xsi:schemaLocation="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd UANodeSet.xsd">
+    
+    <NamespaceUris>
+        <Uri>urn:railway:monitoring</Uri>
+    </NamespaceUris>
+    
+    <Models>
+        <Model ModelUri="urn:railway:monitoring" Version="1.0.0" PublicationDate="2025-06-11T00:00:00Z">
+            <RequiredModel ModelUri="http://opcfoundation.org/UA/" Version="1.04" PublicationDate="2017-11-22T00:00:00Z"/>
+        </Model>
+    </Models>
+
+    <!-- ==================== DATA TYPES ==================== -->
+    
+    <!-- SystemStateEnum DataType -->
+    <UADataType NodeId="ns=1;i=3001" BrowseName="1:SystemStateEnum">
+        <DisplayName>System State Enumeration</DisplayName>
+        <Description>Enumeration for module system states</Description>
+        <References>
+            <Reference ReferenceType="HasSubtype" IsForward="false">i=29</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;i=3002</Reference>
+        </References>
+    </UADataType>
+
+    <!-- SystemStateEnum EnumStrings -->
+    <UAVariable NodeId="ns=1;i=3002" BrowseName="EnumStrings" ParentNodeId="ns=1;i=3001" DataType="i=21" ValueRank="1">
+        <DisplayName>EnumStrings</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:ListOfLocalizedText>
+                <uax:LocalizedText>
+                    <uax:Text>acceso</uax:Text>
+                </uax:LocalizedText>
+                <uax:LocalizedText>
+                    <uax:Text>spento</uax:Text>
+                </uax:LocalizedText>
+                <uax:LocalizedText>
+                    <uax:Text>manutenzione</uax:Text>
+                </uax:LocalizedText>
+            </uax:ListOfLocalizedText>
+        </Value>
+    </UAVariable>
+
+    <!-- ==================== VARIABLE TYPES ==================== -->
+
+    <!-- TemperatureVariableType -->
+    <UAVariableType NodeId="ns=1;i=4001" BrowseName="1:TemperatureVariableType" DataType="Double">
+        <DisplayName>Temperature Variable Type</DisplayName>
+        <Description>Temperature variable with engineering units</Description>
+        <References>
+            <Reference ReferenceType="HasSubtype" IsForward="false">i=63</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;i=4002</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;i=4003</Reference>
+        </References>
+        <Value>
+            <uax:Double>20.0</uax:Double>
+        </Value>
+    </UAVariableType>
+
+    <!-- TemperatureVariableType.EUInformation -->
+    <UAVariable NodeId="ns=1;i=4002" BrowseName="EUInformation" ParentNodeId="ns=1;i=4001" DataType="i=887">
+        <DisplayName>EU Information</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:ExtensionObject>
+                <uax:TypeId>
+                    <uax:Identifier>i=888</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                    <uax:EUInformation>
+                        <uax:NamespaceUri>http://www.opcfoundation.org/UA/units/un/cefact</uax:NamespaceUri>
+                        <uax:UnitId>4408652</uax:UnitId>
+                        <uax:DisplayName>
+                            <uax:Text>°C</uax:Text>
+                        </uax:DisplayName>
+                        <uax:Description>
+                            <uax:Text>degree Celsius</uax:Text>
+                        </uax:Description>
+                    </uax:EUInformation>
+                </uax:Body>
+            </uax:ExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- TemperatureVariableType.EURange -->
+    <UAVariable NodeId="ns=1;i=4003" BrowseName="EURange" ParentNodeId="ns=1;i=4001" DataType="i=884">
+        <DisplayName>EU Range</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:ExtensionObject>
+                <uax:TypeId>
+                    <uax:Identifier>i=885</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                    <uax:Range>
+                        <uax:Low>-40.0</uax:Low>
+                        <uax:High>85.0</uax:High>
+                    </uax:Range>
+                </uax:Body>
+            </uax:ExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- PercentageVariableType -->
+    <UAVariableType NodeId="ns=1;i=4101" BrowseName="1:PercentageVariableType" DataType="Double">
+        <DisplayName>Percentage Variable Type</DisplayName>
+        <Description>Percentage variable (0-100%)</Description>
+        <References>
+            <Reference ReferenceType="HasSubtype" IsForward="false">i=63</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;i=4102</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;i=4103</Reference>
+        </References>
+        <Value>
+            <uax:Double>0.0</uax:Double>
+        </Value>
+    </UAVariableType>
+
+    <!-- PercentageVariableType.EUInformation -->
+    <UAVariable NodeId="ns=1;i=4102" BrowseName="EUInformation" ParentNodeId="ns=1;i=4101" DataType="i=887">
+        <DisplayName>EU Information</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:ExtensionObject>
+                <uax:TypeId>
+                    <uax:Identifier>i=888</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                    <uax:EUInformation>
+                        <uax:NamespaceUri>http://www.opcfoundation.org/UA/units/un/cefact</uax:NamespaceUri>
+                        <uax:UnitId>20529</uax:UnitId>
+                        <uax:DisplayName>
+                            <uax:Text>%</uax:Text>
+                        </uax:DisplayName>
+                        <uax:Description>
+                            <uax:Text>percent</uax:Text>
+                        </uax:Description>
+                    </uax:EUInformation>
+                </uax:Body>
+            </uax:ExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- PercentageVariableType.EURange -->
+    <UAVariable NodeId="ns=1;i=4103" BrowseName="EURange" ParentNodeId="ns=1;i=4101" DataType="i=884">
+        <DisplayName>EU Range</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:ExtensionObject>
+                <uax:TypeId>
+                    <uax:Identifier>i=885</uax:Identifier>
+                </uax:TypeId>
+                <uax:Body>
+                    <uax:Range>
+                        <uax:Low>0.0</uax:Low>
+                        <uax:High>100.0</uax:High>
+                    </uax:Range>
+                </uax:Body>
+            </uax:ExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- ==================== OBJECT TYPES ==================== -->
+
+    <!-- BaseModuleType ObjectType -->
+    <UAObjectType NodeId="ns=1;i=1001" BrowseName="1:BaseModuleType">
+        <DisplayName>Base Module Type</DisplayName>
+        <Description>Base type for platform monitoring modules</Description>
+        <References>
+            <Reference ReferenceType="HasSubtype" IsForward="false">i=58</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;i=1002</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;i=1003</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;i=1004</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;i=1005</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;i=1008</Reference>
+        </References>
+    </UAObjectType>
+
+    <!-- BaseModuleType.ModuleId Property -->
+    <UAVariable NodeId="ns=1;i=1002" BrowseName="1:ModuleId" ParentNodeId="ns=1;i=1001" DataType="String">
+        <DisplayName>Module ID</DisplayName>
+        <Description>Unique identifier for the module</Description>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:String>MODULE_BASE_001</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModuleType.ModuleType Property -->
+    <UAVariable NodeId="ns=1;i=1003" BrowseName="1:ModuleType" ParentNodeId="ns=1;i=1001" DataType="String">
+        <DisplayName>Module Type</DisplayName>
+        <Description>Type of monitoring module</Description>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:String>BASE</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModuleType.SystemState Variable -->
+    <UAVariable NodeId="ns=1;i=1004" BrowseName="1:SystemState" ParentNodeId="ns=1;i=1001" DataType="ns=1;i=3001">
+        <DisplayName>System State</DisplayName>
+        <Description>Current operational state of the module</Description>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:Int32>0</uax:Int32>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModuleType.Temperature Variable -->
+    <UAVariable NodeId="ns=1;i=1005" BrowseName="1:Temperature" ParentNodeId="ns=1;i=1001" DataType="Double">
+        <DisplayName>Temperature</DisplayName>
+        <Description>Ambient temperature measurement</Description>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=4001</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:Double>22.0</uax:Double>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModuleType.SetAlarm Method -->
+    <UAMethod NodeId="ns=1;i=1008" BrowseName="1:SetAlarm" ParentNodeId="ns=1;i=1001">
+        <DisplayName>Set Alarm</DisplayName>
+        <Description>Activate or deactivate the acoustic alarm</Description>
+        <References>
+            <Reference ReferenceType="HasProperty">ns=1;i=1009</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+    </UAMethod>
+
+    <!-- SetAlarm InputArguments -->
+    <UAVariable NodeId="ns=1;i=1009" BrowseName="InputArguments" ParentNodeId="ns=1;i=1008" DataType="i=296" ValueRank="1">
+        <DisplayName>InputArguments</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:ListOfExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>alarmActive</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=1</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                            <uax:Description>
+                                <uax:Text>True to activate alarm, false to deactivate</uax:Text>
+                            </uax:Description>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+            </uax:ListOfExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModuleType ObjectType -->
+    <UAObjectType NodeId="ns=1;i=2001" BrowseName="1:AdvancedModuleType">
+        <DisplayName>Advanced Module Type</DisplayName>
+        <Description>Advanced module with crowd monitoring capabilities</Description>
+        <References>
+            <Reference ReferenceType="HasSubtype" IsForward="false">ns=1;i=1001</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;i=2002</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;i=2005</Reference>
+        </References>
+    </UAObjectType>
+
+    <!-- AdvancedModuleType.CrowdLevel Variable -->
+    <UAVariable NodeId="ns=1;i=2002" BrowseName="1:CrowdLevel" ParentNodeId="ns=1;i=2001" DataType="Double">
+        <DisplayName>Crowd Level</DisplayName>
+        <Description>Estimated crowd density on platform</Description>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=4101</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:Double>0.0</uax:Double>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModuleType.SetAlarmWithLevel Method -->
+    <UAMethod NodeId="ns=1;i=2005" BrowseName="1:SetAlarmWithLevel" ParentNodeId="ns=1;i=2001">
+        <DisplayName>Set Alarm With Level</DisplayName>
+        <Description>Activate alarm with specific sound level</Description>
+        <References>
+            <Reference ReferenceType="HasProperty">ns=1;i=2006</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+    </UAMethod>
+
+    <!-- SetAlarmWithLevel InputArguments -->
+    <UAVariable NodeId="ns=1;i=2006" BrowseName="InputArguments" ParentNodeId="ns=1;i=2005" DataType="i=296" ValueRank="1">
+        <DisplayName>InputArguments</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+            <Reference ReferenceType="HasModellingRule">i=78</Reference>
+        </References>
+        <Value>
+            <uax:ListOfExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>alarmActive</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=1</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                            <uax:Description>
+                                <uax:Text>True to activate alarm, false to deactivate</uax:Text>
+                            </uax:Description>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>soundLevel</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=11</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                            <uax:Description>
+                                <uax:Text>Sound level in decibels (range: 50-120 dB)</uax:Text>
+                            </uax:Description>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+            </uax:ListOfExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- ==================== OBJECT INSTANCES ==================== -->
+
+    <!-- StationGateway Object -->
+    <UAObject NodeId="ns=1;s=StationGateway" BrowseName="1:StationGateway">
+        <DisplayName>Station Gateway</DisplayName>
+        <Description>Main gateway for railway platform monitoring system</Description>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=61</Reference>
+            <Reference ReferenceType="Organizes" IsForward="false">i=85</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.StationId</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.StationName</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.BaseModule_001</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.BaseModule_002</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_001</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_002</Reference>
+        </References>
+    </UAObject>
+
+    <!-- StationGateway.StationId Property -->
+    <UAVariable NodeId="ns=1;s=StationGateway.StationId" BrowseName="1:StationId" ParentNodeId="ns=1;s=StationGateway" DataType="String">
+        <DisplayName>Station ID</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>STN_001</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- StationGateway.StationName Property -->
+    <UAVariable NodeId="ns=1;s=StationGateway.StationName" BrowseName="1:StationName" ParentNodeId="ns=1;s=StationGateway" DataType="String">
+        <DisplayName>Station Name</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>Pordenone Centrale</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_001 Instance -->
+    <UAObject NodeId="ns=1;s=StationGateway.BaseModule_001" BrowseName="1:BaseModule_001" ParentNodeId="ns=1;s=StationGateway">
+        <DisplayName>Base Module 001</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=1001</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.BaseModule_001.ModuleId</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.BaseModule_001.ModuleType</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.BaseModule_001.SystemState</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.BaseModule_001.Temperature</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.BaseModule_001.SetAlarm</Reference>
+        </References>
+    </UAObject>
+
+    <!-- BaseModule_001.ModuleId -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_001.ModuleId" BrowseName="1:ModuleId" ParentNodeId="ns=1;s=StationGateway.BaseModule_001" DataType="String">
+        <DisplayName>Module ID</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>BASE_001</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_001.ModuleType -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_001.ModuleType" BrowseName="1:ModuleType" ParentNodeId="ns=1;s=StationGateway.BaseModule_001" DataType="String">
+        <DisplayName>Module Type</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>BASE</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_001.SystemState -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_001.SystemState" BrowseName="1:SystemState" ParentNodeId="ns=1;s=StationGateway.BaseModule_001" DataType="ns=1;i=3001">
+        <DisplayName>System State</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+        </References>
+        <Value>
+            <uax:Int32>0</uax:Int32>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_001.Temperature -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_001.Temperature" BrowseName="1:Temperature" ParentNodeId="ns=1;s=StationGateway.BaseModule_001" DataType="Double">
+        <DisplayName>Temperature</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=4001</Reference>
+        </References>
+        <Value>
+            <uax:Double>22.5</uax:Double>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_001.SetAlarm -->
+    <UAMethod NodeId="ns=1;s=StationGateway.BaseModule_001.SetAlarm" BrowseName="1:SetAlarm" ParentNodeId="ns=1;s=StationGateway.BaseModule_001">
+        <DisplayName>Set Alarm</DisplayName>
+        <References>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.BaseModule_001.SetAlarm.InputArguments</Reference>
+        </References>
+    </UAMethod>
+
+    <!-- BaseModule_001.SetAlarm.InputArguments -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_001.SetAlarm.InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=StationGateway.BaseModule_001.SetAlarm" DataType="i=296" ValueRank="1">
+        <DisplayName>InputArguments</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:ListOfExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>alarmActive</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=1</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+            </uax:ListOfExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_002 Instance -->
+    <UAObject NodeId="ns=1;s=StationGateway.BaseModule_002" BrowseName="1:BaseModule_002" ParentNodeId="ns=1;s=StationGateway">
+        <DisplayName>Base Module 002</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=1001</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.BaseModule_002.ModuleId</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.BaseModule_002.ModuleType</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.BaseModule_002.SystemState</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.BaseModule_002.Temperature</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.BaseModule_002.SetAlarm</Reference>
+        </References>
+    </UAObject>
+
+    <!-- BaseModule_002.ModuleId -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_002.ModuleId" BrowseName="1:ModuleId" ParentNodeId="ns=1;s=StationGateway.BaseModule_002" DataType="String">
+        <DisplayName>Module ID</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>BASE_002</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_002.ModuleType -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_002.ModuleType" BrowseName="1:ModuleType" ParentNodeId="ns=1;s=StationGateway.BaseModule_002" DataType="String">
+        <DisplayName>Module Type</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>BASE</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_002.SystemState -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_002.SystemState" BrowseName="1:SystemState" ParentNodeId="ns=1;s=StationGateway.BaseModule_002" DataType="ns=1;i=3001">
+        <DisplayName>System State</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+        </References>
+        <Value>
+            <uax:Int32>0</uax:Int32>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_002.Temperature -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_002.Temperature" BrowseName="1:Temperature" ParentNodeId="ns=1;s=StationGateway.BaseModule_002" DataType="Double">
+        <DisplayName>Temperature</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=4001</Reference>
+        </References>
+        <Value>
+            <uax:Double>21.8</uax:Double>
+        </Value>
+    </UAVariable>
+
+    <!-- BaseModule_002.SetAlarm -->
+    <UAMethod NodeId="ns=1;s=StationGateway.BaseModule_002.SetAlarm" BrowseName="1:SetAlarm" ParentNodeId="ns=1;s=StationGateway.BaseModule_002">
+        <DisplayName>Set Alarm</DisplayName>
+        <References>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.BaseModule_002.SetAlarm.InputArguments</Reference>
+        </References>
+    </UAMethod>
+
+    <!-- BaseModule_002.SetAlarm.InputArguments -->
+    <UAVariable NodeId="ns=1;s=StationGateway.BaseModule_002.SetAlarm.InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=StationGateway.BaseModule_002.SetAlarm" DataType="i=296" ValueRank="1">
+        <DisplayName>InputArguments</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:ListOfExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>alarmActive</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=1</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+            </uax:ListOfExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_001 Instance -->
+    <UAObject NodeId="ns=1;s=StationGateway.AdvancedModule_001" BrowseName="1:AdvancedModule_001" ParentNodeId="ns=1;s=StationGateway">
+        <DisplayName>Advanced Module 001</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=2001</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.AdvancedModule_001.ModuleId</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.AdvancedModule_001.ModuleType</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_001.SystemState</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_001.Temperature</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_001.CrowdLevel</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_001.SetAlarmWithLevel</Reference>
+        </References>
+    </UAObject>
+
+    <!-- AdvancedModule_001.ModuleId -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_001.ModuleId" BrowseName="1:ModuleId" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_001" DataType="String">
+        <DisplayName>Module ID</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>ADV_001</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_001.ModuleType -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_001.ModuleType" BrowseName="1:ModuleType" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_001" DataType="String">
+        <DisplayName>Module Type</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>ADVANCED</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_001.SystemState -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_001.SystemState" BrowseName="1:SystemState" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_001" DataType="ns=1;i=3001">
+        <DisplayName>System State</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+        </References>
+        <Value>
+            <uax:Int32>0</uax:Int32>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_001.Temperature -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_001.Temperature" BrowseName="1:Temperature" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_001" DataType="Double">
+        <DisplayName>Temperature</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=4001</Reference>
+        </References>
+        <Value>
+            <uax:Double>23.1</uax:Double>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_001.CrowdLevel -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_001.CrowdLevel" BrowseName="1:CrowdLevel" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_001" DataType="Double">
+        <DisplayName>Crowd Level</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=4101</Reference>
+        </References>
+        <Value>
+            <uax:Double>35.0</uax:Double>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_001.SetAlarmWithLevel -->
+    <UAMethod NodeId="ns=1;s=StationGateway.AdvancedModule_001.SetAlarmWithLevel" BrowseName="1:SetAlarmWithLevel" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_001">
+        <DisplayName>Set Alarm With Level</DisplayName>
+        <References>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.AdvancedModule_001.SetAlarmWithLevel.InputArguments</Reference>
+        </References>
+    </UAMethod>
+
+    <!-- AdvancedModule_001.SetAlarmWithLevel.InputArguments -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_001.SetAlarmWithLevel.InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_001.SetAlarmWithLevel" DataType="i=296" ValueRank="1">
+        <DisplayName>InputArguments</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:ListOfExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>alarmActive</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=1</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>soundLevel</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=11</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+            </uax:ListOfExtensionObject>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_002 Instance -->
+    <UAObject NodeId="ns=1;s=StationGateway.AdvancedModule_002" BrowseName="1:AdvancedModule_002" ParentNodeId="ns=1;s=StationGateway">
+        <DisplayName>Advanced Module 002</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=2001</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.AdvancedModule_002.ModuleId</Reference>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.AdvancedModule_002.ModuleType</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_002.SystemState</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_002.Temperature</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_002.CrowdLevel</Reference>
+            <Reference ReferenceType="HasComponent">ns=1;s=StationGateway.AdvancedModule_002.SetAlarmWithLevel</Reference>
+        </References>
+    </UAObject>
+
+    <!-- AdvancedModule_002.ModuleId -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_002.ModuleId" BrowseName="1:ModuleId" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_002" DataType="String">
+        <DisplayName>Module ID</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>ADV_002</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_002.ModuleType -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_002.ModuleType" BrowseName="1:ModuleType" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_002" DataType="String">
+        <DisplayName>Module Type</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:String>ADVANCED</uax:String>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_002.SystemState -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_002.SystemState" BrowseName="1:SystemState" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_002" DataType="ns=1;i=3001">
+        <DisplayName>System State</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=63</Reference>
+        </References>
+        <Value>
+            <uax:Int32>2</uax:Int32>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_002.Temperature -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_002.Temperature" BrowseName="1:Temperature" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_002" DataType="Double">
+        <DisplayName>Temperature</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=4001</Reference>
+        </References>
+        <Value>
+            <uax:Double>20.5</uax:Double>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_002.CrowdLevel -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_002.CrowdLevel" BrowseName="1:CrowdLevel" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_002" DataType="Double">
+        <DisplayName>Crowd Level</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">ns=1;i=4101</Reference>
+        </References>
+        <Value>
+            <uax:Double>0.0</uax:Double>
+        </Value>
+    </UAVariable>
+
+    <!-- AdvancedModule_002.SetAlarmWithLevel -->
+    <UAMethod NodeId="ns=1;s=StationGateway.AdvancedModule_002.SetAlarmWithLevel" BrowseName="1:SetAlarmWithLevel" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_002">
+        <DisplayName>Set Alarm With Level</DisplayName>
+        <References>
+            <Reference ReferenceType="HasProperty">ns=1;s=StationGateway.AdvancedModule_002.SetAlarmWithLevel.InputArguments</Reference>
+        </References>
+    </UAMethod>
+
+    <!-- AdvancedModule_002.SetAlarmWithLevel.InputArguments -->
+    <UAVariable NodeId="ns=1;s=StationGateway.AdvancedModule_002.SetAlarmWithLevel.InputArguments" BrowseName="InputArguments" ParentNodeId="ns=1;s=StationGateway.AdvancedModule_002.SetAlarmWithLevel" DataType="i=296" ValueRank="1">
+        <DisplayName>InputArguments</DisplayName>
+        <References>
+            <Reference ReferenceType="HasTypeDefinition">i=68</Reference>
+        </References>
+        <Value>
+            <uax:ListOfExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>alarmActive</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=1</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+                <uax:ExtensionObject>
+                    <uax:TypeId>
+                        <uax:Identifier>i=297</uax:Identifier>
+                    </uax:TypeId>
+                    <uax:Body>
+                        <uax:Argument>
+                            <uax:Name>soundLevel</uax:Name>
+                            <uax:DataType>
+                                <uax:Identifier>i=11</uax:Identifier>
+                            </uax:DataType>
+                            <uax:ValueRank>-1</uax:ValueRank>
+                        </uax:Argument>
+                    </uax:Body>
+                </uax:ExtensionObject>
+            </uax:ListOfExtensionObject>
+        </Value>
+    </UAVariable>
+
+</UANodeSet>

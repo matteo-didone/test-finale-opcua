@@ -1,0 +1,25 @@
+###########################
+# UaModeler Project File  #
+# Generated at 11.06.2025 #
+###########################
+
+PROJECTNAME = RailwayMonitoringSystem
+
+TEMPLATESET = ($TEMPLATES)/net/v4_0/t1/net_identifiers.tt2set
+
+MODELS += ($MODELS)/Opc.Ua.NodeSet2.ua \
+    ../RailwayMonitoringSystem.ua
+
+VARIABLES+= ../RailwayMonitoringSystem.ua: Namespace=Railway; Organization=RailwayCompany; 
+
+COLORS = ($MODELS)/Opc.Ua.NodeSet2.ua: #0000ff\
+    ../RailwayMonitoringSystem.ua: #0000ff
+
+OUTPUTPATH = output
+
+NODEACCESSINFOROLES += Administrator \
+    SecurityAdmin \
+    ConfigurationAdmin \
+    Operator \
+    Observer
+
